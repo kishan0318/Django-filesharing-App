@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Upload and ZIP</title>
+    <style>
+        /* Global Styles */
+        :root {
+            --bg-color: #ffffff;
+            --text-color: #000000;
+            --accent-color: #6200ea;
+            --button-hover: #3700b3;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #121212;
+            --text-color: #ffffff;
+            --accent-color: #bb86fc;
+            --button-hover: #3700b3;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2em;
+        }
+
+        form {
+            background: rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            transition: background 0.3s ease;
+        }
+
+        form label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        form input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--accent-color);
+            border-radius: 5px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        form button {
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease;
+        }
+
+        form button:hover {
+            background-color: var(--button-hover);
+        }
+
+        .download-link {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .download-link a {
+            text-decoration: none;
+            background-color: var(--accent-color);
+            color: var(--text-color);
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .download-link a:hover {
+            background-color: var(--button-hover);
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            cursor: pointer;
+            background-color: var(--accent-color);
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            font-size: 1em;
+            color: var(--text-color);
+            transition: background-color 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background-color: var(--button-hover);
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" id="theme-toggle">🌙</button>
+    <h1>Upload Files to Create ZIP</h1>
+    <form id="file-form">
+        <label for="files">Select Files:</label>
+        <input type="file" id="files" name="files" multiple required>
+        <button type="submit">Upload and Generate ZIP</button>
+    </form>
+    <div class="download-link" id="download-section">
+        <a id="download-link" href="#" download>Download ZIP</a>
+    </div>
+
+    <script>
+        // Handle File Upload
+        document.getElementById('file-form').addEventListener('submit', async (event) => {
+            event.preventDefault();
+
+            const files = document.getElementById('files').files;
+            if (files.length === 0) {
+                alert('Please select at least one file.');
+                return;
+            }
+
+            const formData = new FormData();
+            for (const file of files) {
+                formData.append('files', file);
+            }
+
+            try {
+                const response = await fetch('http://127.0.0.1:8000/upload/', { // Update with your API endpoint
+                    method: 'POST',
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.status === 200) {
+                    const folderUID = result.data.folder;
+                    const downloadLink = `/download/${folderUID}`; // Update as per your Django view
+                    const downloadAnchor = document.getElementById('download-link');
+                    downloadAnchor.href = downloadLink;
+                    downloadAnchor.style.display = 'block';
+
+                    const downloadSection = document.getElementById('download-section');
+                    downloadSection.style.display = 'block';
+                } else {
+                    alert(result.message || 'Something went wrong.');
+                }
+            } catch (error) {
+                console.error(error);
+                alert('An error occurred while uploading the files.');
+            }
+        });
+
+        // Dark Mode Toggle
+        const themeToggle = document.getElementById('theme-toggle');
+        const currentTheme = localStorage.getItem('theme') || 'light';
+
+        if (currentTheme === 'dark') {
+            document.body.setAttribute('data-theme', 'dark');
+            themeToggle.textContent = '☀️';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const isDarkMode = document.body.getAttribute('data-theme') === 'dark';
+            document.body.setAttribute('data-theme', isDarkMode ? 'light' : 'dark');
+            themeToggle.textContent = isDarkMode ? '🌙' : '☀️';
+            localStorage.setItem('theme', isDarkMode ? 'light' : 'dark');
+        });
+    </script>
+</body>
+</html>
